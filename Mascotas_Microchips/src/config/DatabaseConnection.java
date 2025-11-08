@@ -5,44 +5,55 @@ package config;
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 
+   
+
+  
 
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
-
+import java.sql.SQLException; 
 import java.util.Properties;
 
 public class DatabaseConnection {
-   
 
-    private static Connection conn = null;
+    
+    // La conexión se crea y se devuelve en cada llamada.
 
-    public static Connection getConnection() {
-        if (conn == null) {
-            try (InputStream input = DatabaseConnection.class
+    public static Connection getConnection() throws SQLException {
+        
+        Properties props = new Properties();
+        Connection newConnection = null;
+
+        // Abrir el archivo db.properties
+        try (InputStream input = DatabaseConnection.class
                     .getClassLoader()
                     .getResourceAsStream("db.properties")) {
 
-                if (input == null) {
-                    throw new RuntimeException("No se encontró db.properties");
-                }
-
-                Properties props = new Properties();
-                props.load(input);
-
-                String url = props.getProperty("db.url");
-                String user = props.getProperty("db.user");
-                String password = props.getProperty("db.password");
-
-                conn = DriverManager.getConnection(url, user, password);
-                System.out.println("Conexión establecida correctamente.");
-
-            } catch (Exception ex) {
-                ex.printStackTrace();
+            if (input == null) {
+                // Lanzamos RuntimeException si no encontramos el archivo
+                throw new RuntimeException("No se encontró db.properties en el classpath.");
             }
+
+            props.load(input);
+
+            String url = props.getProperty("db.url");
+            String user = props.getProperty("db.user");
+            String password = props.getProperty("db.password");
+            
+            // Abrir la nueva conexión
+            newConnection = DriverManager.getConnection(url, user, password);
+            
+
+            return newConnection;
+
+        } catch (Exception ex) {
+            // Si la conexión falla, lanzamos SQLException para que los DAOs lo manejen
+            throw new SQLException("Error al establecer la conexión con la base de datos: " + ex.getMessage(), ex);
         }
-        return conn;
     }
+    
 }
+
 
 
