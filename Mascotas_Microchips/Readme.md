@@ -16,7 +16,7 @@
 - Ejecutar la clase `AppMenu` en el paquete `main/`
 - **Credenciales de prueba:** *(A completar: ej., Usuario: admin / Clave: 123)*
 
-#Informe
+# Informe
 https://docs.google.com/document/d/1p4wA3T74iVRAmqdSllbjBEu7E7OCeQNyhWXocw0kmVw/edit?usp=sharing
 
 # Video
