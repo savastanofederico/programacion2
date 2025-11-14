@@ -13,8 +13,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
 public class MicrochipDao implements GenericDao<Microchip> {
 
     @Override
@@ -27,8 +25,8 @@ public class MicrochipDao implements GenericDao<Microchip> {
     @Override
     public void crear(Microchip chip, Connection conn) throws SQLException {
         String sql = """
-            INSERT INTO Microchip (eliminado, codigo, observaciones, veterinaria, fechaImplantacion)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO Microchip (eliminado, codigo, observaciones, veterinaria, fechaImplantacion,Id_mascota)
+            VALUES (?, ?, ?, ?, ?, ?)
         """;
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setBoolean(1, chip.getEliminado() != null ? chip.getEliminado() : false);
@@ -36,6 +34,8 @@ public class MicrochipDao implements GenericDao<Microchip> {
             ps.setString(3, chip.getObservaciones());
             ps.setString(4, chip.getVeterinaria());
             ps.setDate(5, chip.getFechaImplantacion() != null ? Date.valueOf(chip.getFechaImplantacion()) : null);
+            ps.setLong(6, chip.getIdMascota());
+
             ps.executeUpdate();
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -61,7 +61,6 @@ public class MicrochipDao implements GenericDao<Microchip> {
         return null;
     }
 
-    
     public Microchip leerPorMascotaId(long mascotaId, Connection conn) throws SQLException {
         String sql = "SELECT m.* FROM Microchip m "
                 + "INNER JOIN Mascota ma ON m.Id = ma.Id_microchip "
@@ -81,9 +80,7 @@ public class MicrochipDao implements GenericDao<Microchip> {
     @Override
     public List<Microchip> leerTodos() throws SQLException {
         List<Microchip> lista = new ArrayList<>();
-        try (Connection conn = DatabaseConnection.getConnection(); 
-             Statement st = conn.createStatement(); 
-             ResultSet rs = st.executeQuery("SELECT * FROM Microchip WHERE eliminado = false")) {
+        try (Connection conn = DatabaseConnection.getConnection(); Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT * FROM Microchip WHERE eliminado = false")) {
             while (rs.next()) {
                 lista.add(mapMicrochip(rs));
             }
@@ -145,4 +142,41 @@ public class MicrochipDao implements GenericDao<Microchip> {
         }
         return m;
     }
+
+    public boolean existeChipParaMascota(long idMascota, Connection conn) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM Microchip WHERE Id_mascota = ? AND Eliminado = 0";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, idMascota);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+                return false;
+            }
+        }
+    }
+
+    // Buscar un microchip por su código 
+    public Microchip buscarPorCodigo(String codigo) throws SQLException {
+        String sql = "SELECT * FROM Microchip WHERE Codigo = ? AND Eliminado = 0";
+        try (Connection conn = DatabaseConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, codigo);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Microchip c = new Microchip();
+                    c.setId(rs.getLong("Id"));
+                    c.setEliminado(rs.getBoolean("Eliminado"));
+                    c.setCodigo(rs.getString("Codigo"));
+                    c.setObservaciones(rs.getString("Observaciones"));
+                    c.setVeterinaria(rs.getString("veterinaria"));
+                    c.setFechaImplantacion(rs.getDate("fechaImplantacion").toLocalDate());
+                    c.setIdMascota(rs.getLong("Id_mascota"));
+                    return c;
+                }
+                return null;
+            }
+        }
+    }
+
 }
