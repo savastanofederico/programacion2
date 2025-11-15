@@ -66,19 +66,19 @@ public class MascotaServiceImpl implements GenericService<Mascota> {
         validarMascota(entity);
         Microchip chip = entity.getMicrochip();  // B asociado a A
 
-        // Si no hay chip, podés decidir: o solo crea A en Tx, o lanzar error según lo que te pida el profe.
+        // Si no hay chip, podés decidir: o solo crea A en Tx, o lanzar error 
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 // 1) Crear Mascota con la conexión compartida
-                mascotaDaoImpl.crear(entity, conn);   // este método vos ya lo tenés
+                mascotaDaoImpl.crear(entity, conn);  
                 Long idMascota = entity.getId();
 
-                // 2) Si viene un chip asociado, lo validamos y guardamos
+              
                 if (chip != null) {
                     validarMicrochip(chip);
 
-                    // Regla 1→1: impedir más de un B por A (chequeo previo)
+                    
                     if (microchipDao.existeChipParaMascota(idMascota, conn)) {
                         throw new IllegalStateException(
                             "La mascota con ID " + idMascota + " ya tiene un microchip asignado (regla 1→1).");
@@ -92,7 +92,7 @@ public class MascotaServiceImpl implements GenericService<Mascota> {
                 conn.commit();
             } catch (Exception ex) {
                 conn.rollback();          // rollback ante cualquier error
-                throw ex;                 // re-lanzamos para que la capa superior lo maneje
+                throw ex;                 
             } finally {
                 conn.setAutoCommit(true); // restablecer
             }

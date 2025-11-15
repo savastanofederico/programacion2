@@ -15,8 +15,8 @@ public class Microchip {
     public Microchip(){ //constructor vacío
     }
     
-    public Microchip(Long id, Boolean elimiado, String codigo,
-           LocalDate fechaImplantacion, String veterinaria, String observaciones, Long idMascota)
+    public Microchip(Long id, Boolean eliminado, String codigo,
+           LocalDate fechaImplantacion, String veterinaria, String observaciones, Long Id_Mascota)
     {
         this.id = id;
         this.eliminado = eliminado;
