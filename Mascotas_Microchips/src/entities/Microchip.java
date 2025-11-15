@@ -10,7 +10,6 @@ public class Microchip {
     private String veterinaria;
     private LocalDate fechaImplantacion;
     private Long idMascota;
-
     
     public Microchip(){ //constructor vacío
     }
