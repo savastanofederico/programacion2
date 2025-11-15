@@ -1,93 +1,85 @@
 package App;
 
-import Dao.GenericDao;
-import Daoimplement.MascotaDao;
-import Daoimplement.MicrochipDao;
 import Service.MascotaServiceImpl;
 import Service.MicrochipServiceImpl;
+import Daoimplement.MascotaDao;
+import Daoimplement.MicrochipDao;
 import entities.Mascota;
 import entities.Microchip;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
 
 public class AppMenu {
 
-    private final MascotaServiceImpl mascotaService;
-    private final MicrochipServiceImpl microchipService;
     private final Scanner sc = new Scanner(System.in);
 
-    public AppMenu() {
-        GenericDao<Mascota> mascotaDao = new MascotaDao();
-        GenericDao<Microchip> microchipDao = new MicrochipDao();
+    private final MascotaServiceImpl mascotaService;
+    private final MicrochipServiceImpl microchipService;
 
-        this.mascotaService = new MascotaServiceImpl(mascotaDao);
+    public AppMenu() {
+        // DAOs concretos
+        MascotaDao mascotaDao = new MascotaDao();
+        MicrochipDao microchipDao = new MicrochipDao();
+
+        // Services (asegurate que las firmas sean estas)
+        this.mascotaService = new MascotaServiceImpl(mascotaDao, microchipDao);
         this.microchipService = new MicrochipServiceImpl(microchipDao);
     }
 
     public void run() {
-        String op;
-        do {
-            mostrarMenu();
-            op = sc.nextLine().trim().toUpperCase();
-
+        boolean salir = false;
+        while (!salir) {
             try {
-                switch (op) {
-                    // CRUD Mascota
+                mostrarMenu();
+                String opcion = sc.nextLine().trim();
+                switch (opcion) {
                     case "1" -> crearMascota();
                     case "2" -> listarMascotas();
                     case "3" -> verMascotaPorId();
                     case "4" -> actualizarMascota();
                     case "5" -> eliminarMascota();
-
-                    // Transacción A + B (Tx)
                     case "6" -> crearMascotaConChipTx();
-
-                    // CRUD completo de Microchip
                     case "7" -> crearMicrochipTxParaMascota();
                     case "8" -> listarMicrochips();
                     case "9" -> verMicrochipPorId();
                     case "10" -> actualizarMicrochip();
                     case "11" -> eliminarMicrochip();
-
-                    // Búsqueda por campo relevante
                     case "12" -> buscarMicrochipPorCodigo();
-
-                    case "X" -> System.out.println("Saliendo de la aplicación...");
+                    case "0" -> salir = true;
                     default -> System.out.println("Opción inválida.");
                 }
             } catch (Exception e) {
-                System.out.println("ERROR: " + e.getMessage());
+                System.out.println("❌ Error: " + e.getMessage());
+                e.printStackTrace();
             }
-
-        } while (!op.equals("X"));
+            System.out.println();
+        }
+        System.out.println("👋 Saliendo de la aplicación...");
     }
 
     private void mostrarMenu() {
-        System.out.println("\n=:=:=:= MENÚ MASCOTAS & MICROCHIPS =:=:=:=");
-        System.out.println(" MASCOTAS (A)");
-        System.out.println(" 1) Crear mascota");
-        System.out.println(" 2) Listar mascotas");
-        System.out.println(" 3) Ver mascota por ID");
-        System.out.println(" 4) Actualizar mascota");
-        System.out.println(" 5) Eliminar mascota (lógico)");
-        System.out.println(" 6) Crear mascota + microchip (Tx)");
-        System.out.println();
-        System.out.println(" MICROCHIPS (B)");
-        System.out.println(" 7) Crear microchip para mascota existente (Tx)");
-        System.out.println(" 8) Listar microchips");
-        System.out.println(" 9) Ver microchip por ID");
-        System.out.println("10) Actualizar microchip");
-        System.out.println("11) Eliminar microchip (lógico)");
-        System.out.println();
-        System.out.println(" BÚSQUEDAS");
-        System.out.println("12) Buscar microchip por CÓDIGO");
-        System.out.println("-----------------------------------------------");
-        System.out.println(" X) Salir");
+        System.out.println("===== MENÚ PRINCIPAL =====");
+        System.out.println("1. Crear mascota");
+        System.out.println("2. Listar mascotas");
+        System.out.println("3. Ver mascota por ID");
+        System.out.println("4. Actualizar mascota");
+        System.out.println("5. Eliminar mascota (lógica)");
+        System.out.println("6. Crear mascota + microchip (TX)");
+        System.out.println("7. Crear microchip para mascota existente (TX)");
+        System.out.println("8. Listar microchips");
+        System.out.println("9. Ver microchip por ID");
+        System.out.println("10. Actualizar microchip");
+        System.out.println("11. Eliminar microchip (lógica)");
+        System.out.println("12. Buscar microchip por código");
+        System.out.println("0. Salir");
         System.out.print("Opción: ");
     }
 
-    //Crud de Mascota
+    // =========================
+    // CRUD MASCOTA
+    // =========================
 
     private void crearMascota() throws Exception {
         Mascota m = new Mascota();
@@ -95,8 +87,8 @@ public class AppMenu {
         System.out.print("Nombre: ");
         m.setNombre(sc.nextLine().trim());
 
-        System.out.print("Especie (PERRO/GATO/AVE/OTRO): ");
-        m.setEspecie(sc.nextLine().trim().toUpperCase());
+        System.out.print("Especie (PERRO/GATO/AVE/REPTIL/OTRO): ");
+        m.setEspecie(sc.nextLine().trim().toUpperCase());  // si usás String
 
         System.out.print("Raza: ");
         m.setRaza(sc.nextLine().trim());
@@ -105,7 +97,10 @@ public class AppMenu {
         m.setDuenio(sc.nextLine().trim());
 
         System.out.print("Fecha nacimiento (YYYY-MM-DD): ");
-        m.setFechaNacimiento(LocalDate.parse(sc.nextLine().trim()));
+        String fn = sc.nextLine().trim();
+        if (!fn.isBlank()) {
+            m.setFechaNacimiento(LocalDate.parse(fn));
+        }
 
         m.setEliminado(false);
 
@@ -120,8 +115,12 @@ public class AppMenu {
             return;
         }
         for (Mascota m : lista) {
+            String chipInfo = (m.getMicrochip() != null)
+                    ? " | Chip: " + m.getMicrochip().getCodigo()
+                    : " | Sin chip";
             System.out.println(m.getId() + " - " + m.getNombre()
-                    + " (" + m.getEspecie() + "), dueño: " + m.getDuenio());
+                    + " (" + m.getEspecie() + "), dueño: " + m.getDuenio()
+                    + chipInfo);
         }
     }
 
@@ -138,6 +137,13 @@ public class AppMenu {
             System.out.println("Raza: " + m.getRaza());
             System.out.println("Dueño: " + m.getDuenio());
             System.out.println("Fecha nacimiento: " + m.getFechaNacimiento());
+            System.out.println("Eliminado: " + m.getEliminado());
+            if (m.getMicrochip() != null) {
+                System.out.println("Microchip: " + m.getMicrochip().getCodigo()
+                        + " (ID " + m.getMicrochip().getId() + ")");
+            } else {
+                System.out.println("Microchip: SIN CHIP");
+            }
         }
     }
 
@@ -177,7 +183,9 @@ public class AppMenu {
         System.out.println("✅ Mascota marcada como eliminada.");
     }
 
-    // Transaction Mascota + Microchip
+    // =======================================
+    // TRANSACCIÓN Mascota + Microchip (alta)
+    // =======================================
 
     private void crearMascotaConChipTx() throws Exception {
         Mascota m = new Mascota();
@@ -185,7 +193,7 @@ public class AppMenu {
         System.out.print("Nombre: ");
         m.setNombre(sc.nextLine().trim());
 
-        System.out.print("Especie (PERRO/GATO/AVE/OTRO): ");
+        System.out.print("Especie (PERRO/GATO/AVE/REPTIL/OTRO): ");
         m.setEspecie(sc.nextLine().trim().toUpperCase());
 
         System.out.print("Raza: ");
@@ -195,7 +203,10 @@ public class AppMenu {
         m.setDuenio(sc.nextLine().trim());
 
         System.out.print("Fecha nacimiento (YYYY-MM-DD): ");
-        m.setFechaNacimiento(LocalDate.parse(sc.nextLine().trim()));
+        String fn = sc.nextLine().trim();
+        if (!fn.isBlank()) {
+            m.setFechaNacimiento(LocalDate.parse(fn));
+        }
 
         m.setEliminado(false);
 
@@ -218,9 +229,10 @@ public class AppMenu {
         System.out.println("Microchip ID = " + c.getId());
     }
 
-    // Crud de Microchip
+    // ==============================================
+    // TRANSACCIÓN: crear microchip para mascota ya existente
+    // ==============================================
 
-    // Se crea chip para una mascota ya existente, usando transacción 
     private void crearMicrochipTxParaMascota() throws Exception {
         System.out.print("ID de mascota: ");
         long idMascota = Long.parseLong(sc.nextLine().trim());
@@ -234,11 +246,16 @@ public class AppMenu {
         System.out.print("Observaciones: ");
         c.setObservaciones(sc.nextLine().trim());
         c.setEliminado(false);
-        c.setIdMascota(idMascota);
 
-        microchipService.saveTx(c);
-        System.out.println("✅ Microchip creado con ID " + c.getId());
+        mascotaService.asignarMicrochipTx(idMascota, c);
+
+        System.out.println("✅ Microchip creado y asociado a la mascota.");
+        System.out.println("Microchip ID = " + c.getId());
     }
+
+    // =========================
+    // CRUD MICROCHIP
+    // =========================
 
     private void listarMicrochips() throws Exception {
         List<Microchip> lista = microchipService.findAll();
@@ -247,8 +264,7 @@ public class AppMenu {
             return;
         }
         for (Microchip c : lista) {
-            System.out.println(c.getId() + " - " + c.getCodigo()
-                    + " (Mascota ID: " + c.getIdMascota() + ")");
+            System.out.println(c.getId() + " - " + c.getCodigo());
         }
     }
 
@@ -264,7 +280,6 @@ public class AppMenu {
             System.out.println("Fecha implantación: " + c.getFechaImplantacion());
             System.out.println("Veterinaria: " + c.getVeterinaria());
             System.out.println("Observaciones: " + c.getObservaciones());
-            System.out.println("Id_mascota: " + c.getIdMascota());
         }
     }
 
@@ -300,8 +315,6 @@ public class AppMenu {
         System.out.println("✅ Microchip marcado como eliminado.");
     }
 
-    // Búsqueda por Código
-
     private void buscarMicrochipPorCodigo() throws Exception {
         System.out.print("Código de microchip: ");
         String codigo = sc.nextLine().trim().toUpperCase();
@@ -312,9 +325,9 @@ public class AppMenu {
         } else {
             System.out.println("ID: " + c.getId());
             System.out.println("Código: " + c.getCodigo());
-            System.out.println("Mascota ID: " + c.getIdMascota());
+            System.out.println("Fecha implantación: " + c.getFechaImplantacion());
+            System.out.println("Veterinaria: " + c.getVeterinaria());
+            System.out.println("Observaciones: " + c.getObservaciones());
         }
     }
 }
-
-

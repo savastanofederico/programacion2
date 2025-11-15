@@ -8,22 +8,20 @@ import entities.Mascota;
 import entities.Microchip;
 
 import java.sql.Connection;
-
+import java.sql.SQLException;
 import java.util.List;
 
 public class MascotaServiceImpl implements GenericService<Mascota> {
 
     private final GenericDao<Mascota> mascotaDao;
-    private final MascotaDao mascotaDaoImpl;     // para usar los métodos con Connection
-    private final MicrochipDao microchipDao;     // para operaciones con B en la misma Tx
+    private final MascotaDao mascotaDaoImpl;
+    private final MicrochipDao microchipDaoImpl;
 
-    public MascotaServiceImpl(GenericDao<Mascota> mascotaDao) {
+    public MascotaServiceImpl(GenericDao<Mascota> mascotaDao, MicrochipDao microchipDao) {
         this.mascotaDao = mascotaDao;
         this.mascotaDaoImpl = (MascotaDao) mascotaDao;
-        this.microchipDao = new MicrochipDao();
+        this.microchipDaoImpl = microchipDao;
     }
-
-    // Operaciones CRUD simples
 
     @Override
     public void save(Mascota entity) throws Exception {
@@ -45,89 +43,112 @@ public class MascotaServiceImpl implements GenericService<Mascota> {
     public void update(Mascota entity) throws Exception {
         validarMascota(entity);
         if (entity.getId() == null) {
-            throw new IllegalArgumentException("La mascota debe tener ID para actualizarse.");
+            throw new IllegalArgumentException("La mascota debe tener ID.");
         }
         mascotaDao.actualizar(entity);
     }
 
     @Override
     public void delete(long id) throws Exception {
-        mascotaDao.eliminar(id); // eliminado lógico
+        mascotaDao.eliminar(id);
     }
 
-    
-    /**
-     * Transacción: Guarda una Mascota y, si tiene un Microchip asociado (entity.getMicrochip() != null),
-     * también crea el Microchip en la misma transacción.
-     *
-     */
+    // ---------------------------------------
+    //  TRANSACCIÓN: Mascota + Microchip
+    // ---------------------------------------
+
     @Override
     public void saveTx(Mascota entity) throws Exception {
         validarMascota(entity);
-        Microchip chip = entity.getMicrochip();  // B asociado a A
 
-        // Si no hay chip, podés decidir: o solo crea A en Tx, o lanzar error 
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
-            try {
-                // 1) Crear Mascota con la conexión compartida
-                mascotaDaoImpl.crear(entity, conn);  
-                Long idMascota = entity.getId();
 
-              
-                if (chip != null) {
-                    validarMicrochip(chip);
+            Mascota m = entity;
 
-                    
-                    if (microchipDao.existeChipParaMascota(idMascota, conn)) {
-                        throw new IllegalStateException(
-                            "La mascota con ID " + idMascota + " ya tiene un microchip asignado (regla 1→1).");
-                    }
+            // 1) Crear mascota
+            mascotaDaoImpl.crear(m, conn);
+            Long idMascota = m.getId();
 
-                    // Asociar el chip a la mascota
-                    chip.setIdMascota(idMascota);
-                    microchipDao.crear(chip, conn);
+            Microchip chip = m.getMicrochip();
+
+            if (chip != null) {
+
+                validarMicrochip(chip);
+
+                if (mascotaDaoImpl.tieneMicrochip(idMascota, conn)) {
+                    throw new IllegalStateException("La mascota ya tiene un microchip asignado (1 a 1).");
                 }
 
-                conn.commit();
-            } catch (Exception ex) {
-                conn.rollback();          // rollback ante cualquier error
-                throw ex;                 
-            } finally {
-                conn.setAutoCommit(true); // restablecer
+                microchipDaoImpl.crear(chip, conn);
+                Long idChip = chip.getId();
+
+                mascotaDaoImpl.actualizarMicrochip(idMascota, idChip, conn);
             }
+
+            conn.commit();
+
+        } catch (Exception e) {
+            throw e;
         }
     }
 
-    // Validaciones
+
+    // ---------------------------------------
+    // ASIGNAR CHIP A UNA MASCOTA YA EXISTENTE
+    // ---------------------------------------
+
+    public void asignarMicrochipTx(long idMascota, Microchip chip) throws Exception {
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+
+            // 1) Verificar existencia
+            Mascota mascota = mascotaDaoImpl.leer(idMascota);
+            if (mascota == null) {
+                throw new IllegalArgumentException("No existe mascota con ID " + idMascota);
+            }
+
+            // 2) Regla 1 a 1
+            if (mascotaDaoImpl.tieneMicrochip(idMascota, conn)) {
+                throw new IllegalStateException("La mascota ya tiene un microchip asignado (1 a 1).");
+            }
+
+            // 3) Validación del microchip
+            validarMicrochip(chip);
+
+            // 4) Crear chip
+            microchipDaoImpl.crear(chip, conn);
+            Long idChip = chip.getId();
+
+            // 5) Asociarlo
+            mascotaDaoImpl.actualizarMicrochip(idMascota, idChip, conn);
+
+            conn.commit();
+
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+
+    // ------------------------------
+    // VALIDACIONES
+    // ------------------------------
 
     private void validarMascota(Mascota m) {
-        if (m == null) {
-            throw new IllegalArgumentException("La mascota no puede ser null.");
-        }
-        if (m.getNombre() == null || m.getNombre().isBlank()) {
-            throw new IllegalArgumentException("El nombre de la mascota es obligatorio.");
-        }
-        if (m.getEspecie() == null || m.getEspecie().isBlank()) {
-            throw new IllegalArgumentException("La especie es obligatoria.");
-        }
-        if (m.getDuenio() == null || m.getDuenio().isBlank()) {
-            throw new IllegalArgumentException("El nombre del dueño es obligatorio.");
-        }
-      
+        if (m == null) throw new IllegalArgumentException("La mascota no puede ser null.");
+        if (m.getNombre() == null || m.getNombre().isBlank())
+            throw new IllegalArgumentException("La mascota debe tener nombre.");
+        if (m.getEspecie() == null)
+            throw new IllegalArgumentException("La mascota debe tener especie.");
     }
 
     private void validarMicrochip(Microchip c) {
-        if (c == null) {
-            throw new IllegalArgumentException("El microchip no puede ser null.");
-        }
-        if (c.getCodigo() == null || c.getCodigo().isBlank()) {
+        if (c == null) throw new IllegalArgumentException("El microchip no puede ser null.");
+        if (c.getCodigo() == null || c.getCodigo().isBlank())
             throw new IllegalArgumentException("El código del microchip es obligatorio.");
-        }
-        if (c.getFechaImplantacion() == null) {
-            throw new IllegalArgumentException("La fecha de implantación del microchip es obligatoria.");
-        }
+        if (c.getFechaImplantacion() == null)
+            throw new IllegalArgumentException("La fecha de implantación es obligatoria.");
     }
 }
-
-

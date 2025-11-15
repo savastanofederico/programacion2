@@ -4,7 +4,6 @@
  */
 package Daoimplement;
 
-
 import Dao.GenericDao;
 import config.DatabaseConnection;
 
@@ -14,7 +13,6 @@ import java.sql.*;
 
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class MascotaDao implements GenericDao<Mascota> {
 
@@ -29,8 +27,8 @@ public class MascotaDao implements GenericDao<Mascota> {
 
     @Override
     public void crear(Mascota m, Connection conn) throws SQLException {
-        String sql = "INSERT INTO Mascota (Nombre, Especie, Raza, FechaNacimiento, Duenio, Eliminado, Id_microchip) " +
-                      "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Mascota (Nombre, Especie, Raza, FechaNacimiento, Duenio, Eliminado) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, m.getNombre());
@@ -39,7 +37,7 @@ public class MascotaDao implements GenericDao<Mascota> {
             ps.setDate(4, Date.valueOf(m.getFechaNacimiento()));
             ps.setString(5, m.getDuenio());
             ps.setBoolean(6, m.getEliminado());
-            ps.setObject(7, m.getMicrochip() != null ? m.getMicrochip().getId() : null);
+            //   ps.setObject(7, m.getMicrochip() != null ? m.getMicrochip().getId() : null);
 
             ps.executeUpdate();
 
@@ -60,37 +58,33 @@ public class MascotaDao implements GenericDao<Mascota> {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         Mascota m = mapMascota(rs);
-                        
+
                         // Leer el Id_microchip desde el ResultSet
-                        Long idChip = rs.getLong("id_microchip"); 
-                        
-                        
+                        Long idChip = rs.getLong("id_microchip");
+
                         if (!rs.wasNull()) {
-                             Microchip chip = microchipDao.leer(idChip); 
-                             m.setMicrochip(chip);
+                            Microchip chip = microchipDao.leer(idChip);
+                            m.setMicrochip(chip);
                         }
                         return m;
                     }
-                } 
-            } 
-        } 
+                }
+            }
+        }
         return null;
     }
 
     @Override
     public List<Mascota> leerTodos() throws SQLException {
         List<Mascota> lista = new ArrayList<>();
-        try (Connection conn = DatabaseConnection.getConnection();
-             Statement st = conn.createStatement();
-             ResultSet rs = st.executeQuery("SELECT * FROM Mascota WHERE eliminado = false")) {
+        try (Connection conn = DatabaseConnection.getConnection(); Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT * FROM Mascota WHERE eliminado = false")) {
 
             while (rs.next()) {
                 Mascota m = mapMascota(rs);
-                
+
                 // Leer el Id_microchip desde el ResultSet
                 Long idChip = rs.getLong("id_microchip");
-                
-                
+
                 if (!rs.wasNull()) {
                     Microchip chip = microchipDao.leer(idChip); // Usa el método que abre su propia conexión
                     m.setMicrochip(chip);
@@ -127,7 +121,7 @@ public class MascotaDao implements GenericDao<Mascota> {
         }
 
         if (mascota.getMicrochip() != null) {
-            
+
             microchipDao.actualizar(mascota.getMicrochip(), conn);
         }
     }
@@ -157,9 +151,42 @@ public class MascotaDao implements GenericDao<Mascota> {
         m.setEspecie(rs.getString("especie"));
         m.setRaza(rs.getString("raza"));
         Date fecha = rs.getDate("fechaNacimiento");
-        if (fecha != null) m.setFechaNacimiento(fecha.toLocalDate());
+        if (fecha != null) {
+            m.setFechaNacimiento(fecha.toLocalDate());
+        }
         m.setDuenio(rs.getString("duenio"));
-        
+
+        Long idChip = rs.getObject("Id_microchip", Long.class);
+        if (idChip != null) {
+            Microchip chip = microchipDao.leer(idChip);  // ✅ sin conn
+            m.setMicrochip(chip);
+        }
+
         return m;
     }
+    //Saber si una mascota tiene chip
+
+    public boolean tieneMicrochip(long idMascota, Connection conn) throws SQLException {
+        String sql = "SELECT Id_microchip FROM Mascota WHERE Id = ? AND Eliminado = 0";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, idMascota);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Long idChip = rs.getObject("Id_microchip", Long.class);
+                    return idChip != null;
+                }
+                return false;
+            }
+        }
+    }
+
+    public void actualizarMicrochip(long idMascota, long idMicrochip, Connection conn) throws SQLException {
+        String sql = "UPDATE Mascota SET Id_microchip = ? WHERE Id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, idMicrochip);
+            ps.setLong(2, idMascota);
+            ps.executeUpdate();
+        }
+    }
+
 }

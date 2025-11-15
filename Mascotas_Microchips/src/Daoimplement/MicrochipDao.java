@@ -25,8 +25,8 @@ public class MicrochipDao implements GenericDao<Microchip> {
     @Override
     public void crear(Microchip chip, Connection conn) throws SQLException {
         String sql = """
-            INSERT INTO Microchip (eliminado, codigo, observaciones, veterinaria, fechaImplantacion,Id_Mascota)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO Microchip (eliminado, codigo, observaciones, veterinaria, fechaImplantacion)
+            VALUES (?, ?, ?, ?, ? )
         """;
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setBoolean(1, chip.getEliminado() != null ? chip.getEliminado() : false);
@@ -34,7 +34,7 @@ public class MicrochipDao implements GenericDao<Microchip> {
             ps.setString(3, chip.getObservaciones());
             ps.setString(4, chip.getVeterinaria());
             ps.setDate(5, chip.getFechaImplantacion() != null ? Date.valueOf(chip.getFechaImplantacion()) : null);
-            ps.setLong(6, chip.getIdMascota());
+        //    ps.setLong(6, chip.getIdMascota());
 
             ps.executeUpdate();
 
@@ -49,7 +49,7 @@ public class MicrochipDao implements GenericDao<Microchip> {
     @Override
     public Microchip leer(long id) throws SQLException {
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "SELECT * FROM Microchip WHERE id = ? AND eliminado = false";
+            String sql = "SELECT * FROM Microchip WHERE id = ? AND eliminado = 0";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setLong(1, id);
                 ResultSet rs = ps.executeQuery();
@@ -136,8 +136,8 @@ public class MicrochipDao implements GenericDao<Microchip> {
         m.setCodigo(rs.getString("codigo"));
         m.setObservaciones(rs.getString("observaciones"));
         m.setVeterinaria(rs.getString("veterinaria"));
-        Long idMascota = rs.getObject("Id_Mascota", Long.class);
-        m.setIdMascota(idMascota);
+      //  Long idMascota = rs.getObject("Id_Mascota", Long.class);
+        //m.setIdMascota(idMascota);
         Date fecha = rs.getDate("fechaImplantacion");
         if (fecha != null) {
             m.setFechaImplantacion(fecha.toLocalDate());
@@ -173,7 +173,7 @@ public class MicrochipDao implements GenericDao<Microchip> {
                     c.setObservaciones(rs.getString("Observaciones"));
                     c.setVeterinaria(rs.getString("veterinaria"));
                     c.setFechaImplantacion(rs.getDate("fechaImplantacion").toLocalDate());
-                    c.setIdMascota(rs.getLong("Id_mascota"));
+                    //c.setIdMascota(rs.getLong("Id_mascota"));
                     return c;
                 }
                 return null;
