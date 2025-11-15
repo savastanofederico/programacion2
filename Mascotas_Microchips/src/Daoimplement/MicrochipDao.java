@@ -25,7 +25,7 @@ public class MicrochipDao implements GenericDao<Microchip> {
     @Override
     public void crear(Microchip chip, Connection conn) throws SQLException {
         String sql = """
-            INSERT INTO Microchip (eliminado, codigo, observaciones, veterinaria, fechaImplantacion,Id_mascota)
+            INSERT INTO Microchip (eliminado, codigo, observaciones, veterinaria, fechaImplantacion,Id_Mascota)
             VALUES (?, ?, ?, ?, ?, ?)
         """;
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -136,6 +136,8 @@ public class MicrochipDao implements GenericDao<Microchip> {
         m.setCodigo(rs.getString("codigo"));
         m.setObservaciones(rs.getString("observaciones"));
         m.setVeterinaria(rs.getString("veterinaria"));
+        Long idMascota = rs.getObject("Id_Mascota", Long.class);
+        m.setIdMascota(idMascota);
         Date fecha = rs.getDate("fechaImplantacion");
         if (fecha != null) {
             m.setFechaImplantacion(fecha.toLocalDate());

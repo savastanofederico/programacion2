@@ -33,7 +33,8 @@ public class TestDao {
                     "CHIP-" + System.currentTimeMillis(),
                     LocalDate.of(2025, 1, 1),
                     "VetPlus",
-                    "Implantado correctamente"
+                    "Implantado correctamente",
+                    1L
             );
 
             microchipDao.crear(chip, conn);
