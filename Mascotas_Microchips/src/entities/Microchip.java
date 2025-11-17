@@ -13,7 +13,7 @@ public class Microchip {
     public Microchip(){ //constructor vacío
     }
     
-    public Microchip(Long id, Boolean elimiado, String codigo,
+    public Microchip(Long id, Boolean eliminado, String codigo,
            LocalDate fechaImplantacion, String veterinaria, String observaciones)
     {
         this.id = id;
@@ -22,7 +22,10 @@ public class Microchip {
         this.observaciones = observaciones;
         this.veterinaria = veterinaria;
         this.fechaImplantacion = fechaImplantacion;
+       
     } 
+
+
 
     public Long getId() {
         return id;

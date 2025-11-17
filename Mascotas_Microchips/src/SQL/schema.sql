@@ -13,6 +13,16 @@ CREATE DATABASE mascotas_chips
   DEFAULT COLLATE utf8mb4_general_ci;
 USE mascotas_chips;
 
+CREATE TABLE Microchip (
+    Id INT PRIMARY KEY AUTO_INCREMENT,
+    Codigo VARCHAR(25) NOT NULL UNIQUE,
+    FechaImplantacion DATE NOT NULL,
+    Veterinaria VARCHAR(120),
+    Observaciones VARCHAR(255),
+    Eliminado TINYINT(1) DEFAULT 0 NOT NULL,
+    CONSTRAINT registro_oculto_chip CHECK (Eliminado IN (0,1))
+) ENGINE=InnoDB;
+
 CREATE TABLE Mascota (
     Id INT PRIMARY KEY AUTO_INCREMENT,
     Nombre VARCHAR(60) NOT NULL,
@@ -21,23 +31,13 @@ CREATE TABLE Mascota (
     FechaNacimiento DATE,
     Duenio VARCHAR(120) NOT NULL,
     Eliminado TINYINT(1) DEFAULT 0 NOT NULL,
+    Id_microchip INT UNIQUE,  -- relación 1:1 con microchip
+    CONSTRAINT fk_mascota_microchip FOREIGN KEY (Id_microchip)
+        REFERENCES Microchip(Id)
+        ON DELETE SET NULL,
     CONSTRAINT chk_longitud CHECK (CHAR_LENGTH(Duenio) > 2),
     CONSTRAINT registro_oculto_mascota CHECK (Eliminado IN (0,1))
 ) ENGINE=InnoDB;
-
-CREATE TABLE Microchip (
-    Id INT PRIMARY KEY AUTO_INCREMENT,
-    Codigo VARCHAR(25) NOT NULL UNIQUE,
-    FechaImplantacion DATE NOT NULL,
-    Veterinaria VARCHAR(120),
-    Observaciones VARCHAR(255),
-    Id_mascota INT NOT NULL UNIQUE,          
-    Eliminado TINYINT(1) DEFAULT 0 NOT NULL,
-    CONSTRAINT registro_oculto_chip CHECK (Eliminado IN (0,1)),
-    CONSTRAINT fk_microchip_mascota FOREIGN KEY (Id_mascota)
-        REFERENCES Mascota(Id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
 
 CREATE TABLE nombres (nombre VARCHAR(60) PRIMARY KEY);
 CREATE TABLE especies (especie ENUM('PERRO','GATO','AVE','REPTIL','OTRO') PRIMARY KEY);
