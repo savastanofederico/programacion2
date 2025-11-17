@@ -30,4 +30,4 @@ El dominio fue elegido porque representa un caso real y sencillo para modelar un
 - **Credenciales de prueba:** *(A completar: ej., Usuario: admin / Clave: 123)*
 
 # Video
-[enlace]
+https://www.youtube.com/watch?v=SCbkbGIXrUs
