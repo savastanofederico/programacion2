@@ -27,7 +27,7 @@ El dominio fue elegido porque representa un caso real y sencillo para modelar un
 # Ejecución
 - Compilar el proyecto.
 - Ejecutar la clase `AppMenu` en el paquete `main/`
-- **Credenciales de prueba:** *(A completar: ej., Usuario: admin / Clave: 123)*
+  
 
 # Video
 https://www.youtube.com/watch?v=SCbkbGIXrUs
